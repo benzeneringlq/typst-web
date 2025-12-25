@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CodeMirror + Typst Demo</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      height: 100vh;
+      font-family:
+        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        sans-serif;
+    }
+
+    body {
+      display: flex;
+      flex-direction: row;
+    }
+
+    #top {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      border-bottom: 2px solid #ccc;
+    }
+
+    #editor {
+      flex: 1;
+      /*width: 50%;*/
+      height: 100%;
+      overflow: auto;
+      font-family: monospace;
+      font-size: 14px;
+      padding: 10px;
+      box-sizing: border-box;
+      border-right: 2px solid #ccc;
+      resize: none;
+    }
+
+    #viewer {
+      width: 50%;
+      height: 100%;
+      overflow: auto;
+      background: #f5f5f5;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    #viewer svg {
+      flex: 1;
+      /*max-width: 100%;*/
+      height: auto;
+      display: block;
+      background: white;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    #error {
+      color: #d32f2f;
+      padding: 20px;
+      font-family: monospace;
+      white-space: pre-wrap;
+    }
+
+    #loading {
+      color: #666;
+      font-size: 16px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="viewer">
+    <div id="loading">Loading Typst...</div>
+  </div>
+  <div id="top">
+    <textarea id="editor" spellcheck="false"></textarea>
+  </div>
+
+  <!-- Typst all-in-one bundle -->
+  <script type="module"
+    src="https://cdn.jsdelivr.net/npm/@myriaddreamin/typst.ts/dist/esm/contrib/all-in-one-lite.bundle.js"></script>
+
+  <script type="module">
+    const viewer = document.getElementById("viewer");
+    const editor = document.getElementById("editor");
+
+    // 初始文档内容
+    const initialDoc = `#set page("us-letter")
+#set text(font: "Linux Libertine", size: 11pt)
+
+= Hello Typst!
+
+Type something here and see the live preview below.
+
+== Math Example
+
+The exponential function can be expressed as:
+
+$ e^x = sum_(i=0)^infinity x^i / i! $
+
+== Lists
+
+- First item
+- Second item
+- Third item
+
+== Code
+
+\`\`\`python
+def hello():
+    print("Hello, World!")
+\`\`\`
+
+*Bold text* and _italic text_.`;
+
+    editor.value = initialDoc;
+
+    // 初始化 Typst
+    $typst.setCompilerInitOptions({
+      getModule: () =>
+        "https://cdn.jsdelivr.net/npm/@myriaddreamin/typst-ts-web-compiler/pkg/typst_ts_web_compiler_bg.wasm",
+    });
+
+    $typst.setRendererInitOptions({
+      getModule: () =>
+        "https://cdn.jsdelivr.net/npm/@myriaddreamin/typst-ts-renderer/pkg/typst_ts_renderer_bg.wasm",
+    });
+
+    // 编译 Typst 代码
+    let compileTimeout;
+    const compile = function (mainContent) {
+      $typst
+        .svg({ mainContent })
+        .then((svg) => {
+          viewer.innerHTML = svg;
+        })
+        .catch((err) => {
+          console.error("Typst render error:", err);
+          viewer.innerHTML = `<div id="error">Typst Error:\n${err.message || err}</div>`;
+        });
+    };
+
+    // 监听输入变化，使用防抖
+    editor.addEventListener("input", () => {
+      clearTimeout(compileTimeout);
+      compileTimeout = setTimeout(() => {
+        compile(editor.value);
+      }, 300); // 300ms 防抖
+    });
+
+    // 支持 Tab 键缩进
+    editor.addEventListener("keydown", (e) => {
+      if (e.key === "Tab") {
+        e.preventDefault();
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        editor.value =
+          editor.value.substring(0, start) +
+          "  " +
+          editor.value.substring(end);
+        editor.selectionStart = editor.selectionEnd = start + 2;
+      }
+    });
+
+    // 首次渲染
+    compile(editor.value);
+  </script>
+</body>
+
+</html>

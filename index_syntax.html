@@ -66,7 +66,7 @@ def hello():
         await $typst.doPrepareUse(); // 初始化环境
         const compiler = await $typst.getCompilerReset(); // 获取干净的 compiler
         const options = await $typst.getCompileOptions({ mainContent });
-        const result = await compiler.compile(options); // 内部编译
+        const result = await compiler.compile({ ...options, format: undefined }); // 内部编译
         const diagnostics = result?.diagnostics || [];
         if (diagnostics.length === 0) {
           errorDiv.textContent = "✅ Syntax OK";

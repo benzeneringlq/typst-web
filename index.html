@@ -6,59 +6,168 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CodeMirror + Typst Demo</title>
   <style>
+    :root {
+      color-scheme: light;
+      --bg: #eef1f5;
+      --panel-border: #d9dee7;
+      --toolbar-border: #d7dce4;
+      --text: #1f2937;
+      --muted: #667085;
+    }
+
     html,
     body {
       margin: 0;
       height: 100vh;
-      font-family:
-        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-        sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(47, 111, 235, 0.08), transparent 28%),
+        linear-gradient(180deg, #f7f9fc 0%, var(--bg) 100%);
+      color: var(--text);
     }
 
     body {
       display: flex;
-      flex-direction: row;
+      flex-direction: column;
     }
 
-    #top {
+    #app {
       display: flex;
       flex-direction: column;
       flex: 1;
-      border-bottom: 2px solid #ccc;
+      min-height: 0;
+    }
+
+    #toolbar {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: rgba(247, 248, 251, 0.92);
+      border-bottom: 1px solid var(--toolbar-border);
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    #toolbar .brand {
+      flex: 0 0 auto;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-right: 8px;
+    }
+
+    .tool-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding-right: 10px;
+      margin-right: 10px;
+      border-right: 1px solid rgba(100, 116, 139, 0.14);
+    }
+
+    .tool-button {
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      border-radius: 0;
+      height: 28px;
+      padding: 0 6px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition:
+        color 120ms ease,
+        opacity 120ms ease;
+    }
+
+    .tool-button:hover {
+      color: #0f172a;
+      opacity: 0.8;
+    }
+
+    .tool-button:active {
+      opacity: 0.6;
+    }
+
+    #workspace {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+    }
+
+    #editor-shell {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      flex: 1.15 1 0;
+      width: min(960px, 100%);
+    }
+
+    #editor-wrap {
+      display: flex;
+      flex: 1;
+      min-height: 0;
     }
 
     #editor {
       flex: 1;
-      /*width: 50%;*/
       height: 100%;
       overflow: auto;
-      font-family: monospace;
-      font-size: 14px;
-      padding: 10px;
+      font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Monaco, Consolas, monospace;
+      font-size: 15px;
+      line-height: 1.55;
+      padding: 14px 16px;
       box-sizing: border-box;
-      border-right: 2px solid #ccc;
+      border: 1px solid var(--panel-border);
+      border-radius: 0;
+      background: #fcfdff;
+      color: var(--text);
       resize: none;
+      outline: none;
+    }
+
+    #editor:focus {
+      border-color: rgba(100, 116, 139, 0.16);
+      box-shadow: none;
+    }
+
+    #preview-shell {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      flex: 0.85 1 0;
+      width: min(960px, 100%);
     }
 
     #viewer {
-      width: 50%;
+      flex: 1;
       height: 100%;
       overflow: auto;
-      background: #f5f5f5;
+      background: transparent;
       display: flex;
       align-items: flex-start;
-      justify-content: center;
-      padding: 20px;
+      justify-content: flex-start;
       box-sizing: border-box;
     }
 
     #viewer svg {
-      flex: 1;
-      /*max-width: 100%;*/
+      width: 100%;
+      max-width: none;
       height: auto;
       display: block;
       background: white;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 0;
+      box-shadow: none;
+      align-self: flex-start;
     }
 
     #error {
@@ -69,18 +178,86 @@
     }
 
     #loading {
-      color: #666;
-      font-size: 16px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    @media (max-width: 900px) {
+      #workspace {
+        padding: 12px;
+      }
+
+      #editor-shell {
+        width: 100%;
+      }
+
+      #preview-shell {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 640px) {
+      #toolbar {
+        padding: 10px 12px;
+      }
+
+      #workspace {
+        padding: 10px;
+      }
+
+      #editor {
+        font-size: 14px;
+      }
+    }
+
+    @media (min-width: 1200px) {
+      #workspace {
+        padding: 14px;
+      }
+
+      #editor-shell {
+        flex-basis: 0;
+      }
+
+      #preview-shell {
+        flex-basis: 0;
+      }
     }
   </style>
 </head>
 
 <body>
-  <div id="viewer">
-    <div id="loading">Loading Typst...</div>
-  </div>
-  <div id="top">
-    <textarea id="editor" spellcheck="false"></textarea>
+  <div id="app">
+    <header id="toolbar" aria-label="Typst toolbar">
+      <div class="brand">Typst</div>
+      <div class="tool-group" id="snippet-toolbar">
+        <button class="tool-button" type="button" data-snippet="lim">lim</button>
+        <button class="tool-button" type="button" data-snippet="sum">sum</button>
+        <button class="tool-button" type="button" data-snippet="int">int</button>
+        <button class="tool-button" type="button" data-snippet="matrix">matrix</button>
+        <button class="tool-button" type="button" data-snippet="frac">frac</button>
+        <button class="tool-button" type="button" data-snippet="sqrt">sqrt</button>
+      </div>
+      <div class="tool-group">
+        <button class="tool-button" type="button" data-snippet="heading">Heading</button>
+        <button class="tool-button" type="button" data-snippet="bullet">Bullet</button>
+        <button class="tool-button" type="button" data-snippet="code">Code</button>
+      </div>
+    </header>
+
+    <main id="workspace">
+      <section id="editor-shell">
+        <div id="editor-wrap">
+          <textarea id="editor" spellcheck="false"></textarea>
+        </div>
+      </section>
+
+      <section id="preview-shell">
+        <div id="viewer">
+          <div id="loading">Loading Typst...</div>
+        </div>
+      </section>
+    </main>
   </div>
 
   <!-- Typst all-in-one bundle -->
@@ -90,6 +267,7 @@
   <script type="module">
     const viewer = document.getElementById("viewer");
     const editor = document.getElementById("editor");
+    const snippetToolbar = document.getElementById("snippet-toolbar");
 
     // 初始文档内容
     const initialDoc = `#set page("us-letter")
@@ -146,6 +324,47 @@ def hello():
           viewer.innerHTML = `<div id="error">Typst Error:\n${err.message || err}</div>`;
         });
     };
+
+    const snippets = {
+      lim: `lim_(x -> 0)`,
+      sum: `sum_(i=0)^infinity`,
+      int: `integral_0^1`,
+      matrix: `mat(1, 0; 0, 1)`,
+      frac: `frac(a, b)`,
+      sqrt: `sqrt(x)`,
+      heading: `= Section Title`,
+      bullet: `- First item\n- Second item`,
+      code: "```typst\nlet x = 1\n```",
+    };
+
+    const insertSnippet = (snippet) => {
+      const start = editor.selectionStart;
+      const end = editor.selectionEnd;
+      const value = editor.value;
+      const nextValue = value.slice(0, start) + snippet + value.slice(end);
+
+      editor.value = nextValue;
+
+      const cursor = start + snippet.length;
+      editor.selectionStart = cursor;
+      editor.selectionEnd = cursor;
+      editor.focus();
+      compile(editor.value);
+    };
+
+    snippetToolbar.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-snippet]");
+      if (!button) {
+        return;
+      }
+
+      const snippetName = button.dataset.snippet;
+      if (!snippetName || !Object.prototype.hasOwnProperty.call(snippets, snippetName)) {
+        return;
+      }
+
+      insertSnippet(snippets[snippetName]);
+    });
 
     // 监听输入变化，使用防抖
     editor.addEventListener("input", () => {
